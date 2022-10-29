@@ -1,3 +1,2 @@
-
-@go build -o .\target\%1.exe %1.go
-@.\target\%1.exe
+@go build -o .\target\main.exe main.go
+@.\target\main.exe

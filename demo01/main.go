@@ -1,6 +1,7 @@
 package main
 
 import (
+	"demo01/test"
 	"fmt"
 )
 
@@ -27,6 +28,8 @@ func (sphone SumsungPhone) call() int {
 }
 
 func main() {
-	var phone Phone
-	fmt.Printf("%T", phone)
+	phone := new(SumsungPhone)
+	fmt.Println(phone)
+	fmt.Println("hello, world")
+	fmt.Printf("test.Add(3, 4): %v\n", test.Add(3, 4))
 }
