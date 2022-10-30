@@ -1,35 +1,19 @@
 package main
 
 import (
-	"demo01/test"
+	_ "errors"
 	"fmt"
 )
 
-type Phone interface {
-	call() int
-}
-
-type ApplePhone struct {
-	phoneType string
-}
-
-type SumsungPhone struct {
-	phoneType string
-}
-
-func (iphone ApplePhone) call() int {
-	fmt.Println("This is a call from", iphone.phoneType)
-	return 1
-}
-
-func (sphone SumsungPhone) call() int {
-	fmt.Println("This is a call from", sphone.phoneType)
-	return 2
+func Divide(dividee int, divider int) (int, error) {
+	if divider == 0 {
+		return 0, fmt.Errorf("%d 和 %d 相除报错", dividee, divider)
+	}
+	return dividee / divider, fmt.Errorf("")
 }
 
 func main() {
-	phone := new(SumsungPhone)
-	fmt.Println(phone)
-	fmt.Println("hello, world")
-	fmt.Printf("test.Add(3, 4): %v\n", test.Add(3, 4))
+	fmt.Println(Divide(10, 0))
+	fmt.Println(Divide(10, 50))
+
 }

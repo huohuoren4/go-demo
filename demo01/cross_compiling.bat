@@ -5,5 +5,5 @@
 @go env -w CGO_ENABLED=0
 @go env -w GOOS=windows
 @go env -w GOARCH=amd64
-@go build -o .\target\main.exe main.go
+@go build -o .\target\main.out main.go
 @echo 编译成功
