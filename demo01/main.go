@@ -1,19 +1,23 @@
 package main
 
 import (
-	_ "errors"
+	"bufio"
 	"fmt"
+	"os"
 )
 
-func Divide(dividee int, divider int) (int, error) {
-	if divider == 0 {
-		return 0, fmt.Errorf("%d 和 %d 相除报错", dividee, divider)
-	}
-	return dividee / divider, fmt.Errorf("")
+type Phone interface {
+	call() int
+}
+type SumsungPhone struct {
+	phoneType string
+}
+
+func (sphone *SumsungPhone) call() int {
+	fmt.Println("This is a call from", sphone.phoneType)
+	return 2
 }
 
 func main() {
-	fmt.Println(Divide(10, 0))
-	fmt.Println(Divide(10, 50))
-
+	bufio.NewReader(os.Stdin)
 }
