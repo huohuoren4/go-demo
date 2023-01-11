@@ -2,55 +2,105 @@ package main
 
 import (
 	"fmt"
-	"github.com/spf13/viper" // 支持`json，toml，ini，yaml，hcl，env`等格式的文件内容
-	"path/filepath"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"strings"
 )
 
-type YamlStruct struct {
-	Name    string `yaml:"name" json:"name"`
-	Age     int    `yaml:"age" json:"age"`
-	Address string `yaml:"address" json:"address"`
+// 查询用户列表
+func Get()  {
+	resp, err := http.Get("http://localhost:8080/hello?name=123&password=12121")
+	if err!=nil {
+		log.Fatalln(err)
+	}
+	defer func() {
+		if err :=resp.Body.Close(); err!=nil{
+			log.Fatalln(err)
+		}
+	}()
+	data, err1 := ioutil.ReadAll(resp.Body)
+	if err1!=nil{
+		log.Fatalln(err)
+	}
+	fmt.Println(string(data))
+	for key, val := range resp.Header{
+		fmt.Println(key, val)
+	}
 }
 
-/**
-读配置文件
-@filename: 文件名
-@filetype: 文件类型, json, yaml等类型
-*/
-func ReadConfig(filename string) interface{} {
-	ext := filepath.Ext(filename)[1:]
-	viper.SetConfigType(ext)
-	viper.SetConfigFile(filename)
-	err := viper.ReadInConfig()
-	if err != nil {
-		fmt.Println(err.Error())
-		return nil
+// 查询用户信息
+func GetInfo()  {
+	resp, err := http.Get("http://localhost:8080/hello/1")
+	if err!=nil {
+		log.Fatalln(err)
 	}
-	var yaml YamlStruct
-	err = viper.Unmarshal(&yaml)
-	if err != nil {
-		fmt.Println(err.Error())
-		return nil
+	defer func() {
+		if err :=resp.Body.Close(); err!=nil{
+			log.Fatalln(err)
+		}
+	}()
+	data, err1 := ioutil.ReadAll(resp.Body)
+	if err1!=nil{
+		log.Fatalln(err)
 	}
-	return yaml
+	fmt.Println(string(data))
+	for key, val := range resp.Header{
+		fmt.Println(key, val)
+	}
 }
 
-func WriteConfig(filename string, content YamlStruct) {
-	ext := filepath.Ext(filename)[1:]
-	viper.SetConfigType(ext)
-	viper.SetConfigFile(filename)
-	viper.Set("name", content.Name)
-	viper.Set("age", content.Age)
-	viper.Set("address", content.Address)
-	err := viper.WriteConfig()
-	if err != nil {
-		fmt.Println(err.Error())
-		return
+
+// 创建用户
+func Post() {
+	reqBody :=`{ "name": "123", "password": "123456" }`
+	resp, err := http.Post("http://localhost:8080/hello", "application/json", strings.NewReader(reqBody))
+	if err!=nil {
+		log.Fatalln(err)
+	}
+	defer func() {
+		if err :=resp.Body.Close(); err!=nil{
+			log.Fatalln(err)
+		}
+	}()
+	data, err1 := ioutil.ReadAll(resp.Body)
+	if err1!=nil{
+		log.Fatalln(err)
+	}
+	fmt.Println(string(data))
+	for key, val := range resp.Header{
+		fmt.Println(key, val)
 	}
 }
+
+// 上传用户头像
+func PostFile(){
+	client := &http.Client{}
+	reqBody:=`{ "file": "C:/Users/Administrator/Desktop/" }`
+	req, err := http.NewRequest("POST", "http://localhost:8080/hello/1/upload", strings.NewReader(reqBody))
+	if err!=nil{
+		log.Fatalln(err)
+	}
+	req.Header.Add("Content-Type", "multipart/form-data")
+	req.Header.Set()
+	resp, err01 := client.Do(req)
+	if err01!=nil{
+		log.Fatalln(err)
+	}
+	data, err02 := ioutil.ReadAll(resp.Body)
+	if err02!=nil{
+		log.Fatalln(err02)
+	}
+	fmt.Println(string(data))
+	for key, val := range resp.Header {
+		fmt.Println(key, val)
+	}
+}
+
+
 
 func main() {
-	fmt.Println(ReadConfig("test.yaml"))
-	content := YamlStruct{Name: "tom", Age: 456, Address: "中关村晓坪路1203路"}
-	WriteConfig("test01.json", content)
+	PostFile()
+
+
 }
