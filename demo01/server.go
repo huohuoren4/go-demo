@@ -10,7 +10,7 @@ import (
 )
 
 type User struct {
-	Name string `json:"name"`
+	Name     string `json:"name"`
 	Password string `json:"password"`
 }
 
@@ -51,8 +51,10 @@ func main() {
 	// 上传用户头像: POST /hello/{id}/upload  file=xxxx
 	router.Handle("POST", "/hello/:id/upload", func(context *gin.Context) {
 		fmt.Println("路径参数: id=", context.Param("id"))
-		file, err := context.FormFile("file")
+		file, err := context.FormFile("image_file")
+		fmt.Println("上传的文件名:", file.Filename)
 		if err != nil {
+			fmt.Println(err.Error())
 			context.JSON(http.StatusInternalServerError, gin.H{"msg": "文件上传失败!!!"})
 			return
 		}

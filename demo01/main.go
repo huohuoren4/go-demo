@@ -2,105 +2,103 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"github.com/parnurzeal/gorequest"
 	"log"
-	"net/http"
-	"strings"
 )
 
-// 查询用户列表
-func Get()  {
-	resp, err := http.Get("http://localhost:8080/hello?name=123&password=12121")
-	if err!=nil {
-		log.Fatalln(err)
-	}
-	defer func() {
-		if err :=resp.Body.Close(); err!=nil{
-			log.Fatalln(err)
-		}
-	}()
-	data, err1 := ioutil.ReadAll(resp.Body)
-	if err1!=nil{
-		log.Fatalln(err)
-	}
-	fmt.Println(string(data))
-	for key, val := range resp.Header{
-		fmt.Println(key, val)
-	}
+// 打印请求信息
+func PrintRequest(req *gorequest.SuperAgent) {
+	fmt.Printf("请求信息:\n请求的url: %v\n请求方法: %v\n请求头: %v\nContent-Type: %v\nraw数据: %v\n",
+		req.Url, req.Method, req.Header, req.ForceType, req.RawString)
 }
 
-// 查询用户信息
-func GetInfo()  {
-	resp, err := http.Get("http://localhost:8080/hello/1")
-	if err!=nil {
-		log.Fatalln(err)
-	}
-	defer func() {
-		if err :=resp.Body.Close(); err!=nil{
-			log.Fatalln(err)
-		}
-	}()
-	data, err1 := ioutil.ReadAll(resp.Body)
-	if err1!=nil{
-		log.Fatalln(err)
-	}
-	fmt.Println(string(data))
-	for key, val := range resp.Header{
-		fmt.Println(key, val)
-	}
+// 打印响应信息
+func PrintResponse(resp gorequest.Response, body string) {
+	fmt.Printf("响应信息:\n响应的状态码: %v\n响应头: %v\n响应体: %v\n", resp.StatusCode, resp.Header, body)
 }
 
+// 获取用户列表
+func GetUserList() {
+	req := gorequest.New().Get("http://localhost:8080/hello?name=123&password=12121")
+	PrintRequest(req)
+	resp, body, err := req.End()
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintResponse(resp, body)
+}
+
+// 获取用户详细信息
+func GetUserInfo() {
+	req := gorequest.New().Get("http://localhost:8080/hello/1")
+	PrintRequest(req)
+	resp, body, err := req.End()
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintResponse(resp, body)
+}
 
 // 创建用户
-func Post() {
-	reqBody :=`{ "name": "123", "password": "123456" }`
-	resp, err := http.Post("http://localhost:8080/hello", "application/json", strings.NewReader(reqBody))
-	if err!=nil {
-		log.Fatalln(err)
+func PostUser() {
+	reqBody := `{ "name": "123", "password": "123456" }`
+	req := gorequest.New().Post("http://localhost:8080/hello").Type("json").Send(reqBody)
+	PrintRequest(req)
+	resp, body, err := req.End()
+	if err != nil {
+		log.Fatal(err)
 	}
-	defer func() {
-		if err :=resp.Body.Close(); err!=nil{
-			log.Fatalln(err)
-		}
-	}()
-	data, err1 := ioutil.ReadAll(resp.Body)
-	if err1!=nil{
-		log.Fatalln(err)
-	}
-	fmt.Println(string(data))
-	for key, val := range resp.Header{
-		fmt.Println(key, val)
-	}
+	PrintResponse(resp, body)
 }
 
 // 上传用户头像
-func PostFile(){
-	client := &http.Client{}
-	reqBody:=`{ "file": "C:/Users/Administrator/Desktop/" }`
-	req, err := http.NewRequest("POST", "http://localhost:8080/hello/1/upload", strings.NewReader(reqBody))
-	if err!=nil{
-		log.Fatalln(err)
+func PostUserIcon() {
+	filepath := "C:/Users/Administrator/Desktop/Snipaste_2023-01-11_23-21-01.png"
+	// 文件名不能是file
+	req := gorequest.New().Post("http://localhost:8080/hello/1/upload").
+		Type("multipart").
+		Set("User-Agent", "golang").
+		SendFile(filepath, "", "image_file")
+	PrintRequest(req)
+	resp, body, err01 := req.End()
+	if err01 != nil {
+		log.Fatal(err01)
 	}
-	req.Header.Add("Content-Type", "multipart/form-data")
-	req.Header.Set()
-	resp, err01 := client.Do(req)
-	if err01!=nil{
-		log.Fatalln(err)
-	}
-	data, err02 := ioutil.ReadAll(resp.Body)
-	if err02!=nil{
-		log.Fatalln(err02)
-	}
-	fmt.Println(string(data))
-	for key, val := range resp.Header {
-		fmt.Println(key, val)
-	}
+	PrintResponse(resp, body)
 }
 
+// 修改用户信息
+func PutUserInfo() {
+	reqBody := `{ "name": "123" }`
+	req := gorequest.New().Put("http://localhost:8080/hello/1").Type("json").Send(reqBody)
+	resp, body, err := req.End()
+	PrintRequest(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintResponse(resp, body)
+}
 
+func DeleteUser() {
+	req := gorequest.New().Delete("http://localhost:8080/hello/1")
+	PrintRequest(req)
+	resp, body, err := req.End()
+	if err != nil {
+		log.Fatal(err)
+	}
+	PrintResponse(resp, body)
+}
 
 func main() {
-	PostFile()
-
-
+	GetUserList()
+	fmt.Println("#######################")
+	GetUserInfo()
+	fmt.Println("#######################")
+	PostUser()
+	fmt.Println("#######################")
+	PostUserIcon()
+	fmt.Println("#######################")
+	PutUserInfo()
+	fmt.Println("#######################")
+	DeleteUser()
 }
