@@ -8,6 +8,8 @@
 *.sum
 *.exe
 *.zip
+*.log
+*.png
 
 
 

@@ -2,103 +2,176 @@ package main
 
 import (
 	"fmt"
-	"github.com/parnurzeal/gorequest"
+	"io"
 	"log"
+	"math/rand"
+	"net/http"
+	"os"
+	"path/filepath"
+	"time"
 )
 
-// 打印请求信息
-func PrintRequest(req *gorequest.SuperAgent) {
-	fmt.Printf("请求信息:\n请求的url: %v\n请求方法: %v\n请求头: %v\nContent-Type: %v\nraw数据: %v\n",
-		req.Url, req.Method, req.Header, req.ForceType, req.RawString)
-}
+var logger *log.Logger
 
-// 打印响应信息
-func PrintResponse(resp gorequest.Response, body string) {
-	fmt.Printf("响应信息:\n响应的状态码: %v\n响应头: %v\n响应体: %v\n", resp.StatusCode, resp.Header, body)
-}
-
-// 获取用户列表
-func GetUserList() {
-	req := gorequest.New().Get("http://localhost:8080/hello?name=123&password=12121")
-	PrintRequest(req)
-	resp, body, err := req.End()
+func init() {
+	file := "/var/golang-demo/log/test-app.log"
+	err := os.MkdirAll(filepath.Dir(file), 0755)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
-	PrintResponse(resp, body)
-}
-
-// 获取用户详细信息
-func GetUserInfo() {
-	req := gorequest.New().Get("http://localhost:8080/hello/1")
-	PrintRequest(req)
-	resp, body, err := req.End()
-	if err != nil {
-		log.Fatal(err)
-	}
-	PrintResponse(resp, body)
-}
-
-// 创建用户
-func PostUser() {
-	reqBody := `{ "name": "123", "password": "123456" }`
-	req := gorequest.New().Post("http://localhost:8080/hello").Type("json").Send(reqBody)
-	PrintRequest(req)
-	resp, body, err := req.End()
-	if err != nil {
-		log.Fatal(err)
-	}
-	PrintResponse(resp, body)
-}
-
-// 上传用户头像
-func PostUserIcon() {
-	filepath := "C:/Users/Administrator/Desktop/Snipaste_2023-01-11_23-21-01.png"
-	// 文件名不能是file
-	req := gorequest.New().Post("http://localhost:8080/hello/1/upload").
-		Type("multipart").
-		Set("User-Agent", "golang").
-		SendFile(filepath, "", "image_file")
-	PrintRequest(req)
-	resp, body, err01 := req.End()
+	logFile, err01 := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err01 != nil {
-		log.Fatal(err01)
+		log.Fatalln(err)
 	}
-	PrintResponse(resp, body)
+	logger = log.New(logFile, "", log.Ldate|log.Ltime|log.Lmicroseconds)
 }
 
-// 修改用户信息
-func PutUserInfo() {
-	reqBody := `{ "name": "123" }`
-	req := gorequest.New().Put("http://localhost:8080/hello/1").Type("json").Send(reqBody)
-	resp, body, err := req.End()
-	PrintRequest(req)
+// 增加memory 多少M, 持续一定时间
+func TestMem(mem int, duration int64) {
+	s := make([][M]byte, mem)
+	PrintLog("TestMem 开始增加内存...")
+	for i := 0; i < mem; i++ {
+		for j := 0; j < M; j++ {
+			s[i][j] = 'c'
+		}
+	}
+	PrintLog("TestMem 增加内存结束...")
+	time.Sleep(time.Second * time.Duration(duration))
+	s[0][0] = 'a'
+}
+
+// CPU使用率xx%( 30% )持续一段时间
+func TestCpu(cupUsage int64, duration int64) {
+	var t, t1 int64
+	t = time.Now().Unix() + duration
+	for {
+		if time.Now().Unix() > t {
+			return
+		}
+		t1 = time.Now().UnixMilli() + cupUsage
+		for {
+			if time.Now().UnixMilli() > t1 {
+				break
+			}
+		}
+		time.Sleep(time.Millisecond * time.Duration(100-cupUsage))
+	}
+}
+
+// 定义一个map来实现路由转发
+type MyHandler struct {
+	Mux map[string]func(http.ResponseWriter, *http.Request)
+}
+
+func (handler *MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	//实现路由的转发
+	if h, ok := handler.Mux[r.URL.String()]; ok {
+		//用这个handler实现路由转发，相应的路由调用相应func
+		h(w, r)
+		return
+	}
+	msg := fmt.Sprintf(`{
+    "error": "请求地址不存在!!! 本镜像可访问路径: [ '/', '/foo' ], 可访问端口: [ '80', '8080' ], 容器日志目录: [ /var/golang-demo/log/ ]"
+}
+`)
+	PrintLog(fmt.Sprintf("%v  %v  %v%v    %v", r.Method, http.StatusNotFound, r.Host, r.URL, r.Header))
+	_, err := io.WriteString(w, msg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	PrintResponse(resp, body)
 }
 
-func DeleteUser() {
-	req := gorequest.New().Delete("http://localhost:8080/hello/1")
-	PrintRequest(req)
-	resp, body, err := req.End()
+func HomeHandler(response http.ResponseWriter, request *http.Request) {
+	hostname, err := os.Hostname()
 	if err != nil {
 		log.Fatal(err)
 	}
-	PrintResponse(resp, body)
+	s := `{
+    "msg":"welcome to home page, 我是主机[ %v ]!!! 本镜像可访问路径: [ '/', '/foo' ], 可访问端口: [ '80', '8080' ], 容器日志可挂载目录: [ '/var/golang-demo/log/' ]", 
+    "request_api":"%v %v%v",
+    "request_header":"%v"
 }
+`
+	PrintLog(fmt.Sprintf("%v  %v  %v%v    %v", request.Method, http.StatusOK, request.Host, request.URL, request.Header))
+	json := fmt.Sprintf(s, hostname, request.Method, request.Host, request.URL, request.Header)
+	_, err = response.Write([]byte(json))
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func FooHandler(response http.ResponseWriter, request *http.Request) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Fatal(err)
+	}
+	s := `{
+    "msg":"welcome to foo page, 我是主机[ %v ]!!! 本镜像可访问路径: [ '/', '/foo' ], 可访问端口: [ '80', '8080' ], 容器日志可挂载目录: [ '/var/golang-demo/log/' ]", 
+    "request_api":"%v %v%v",
+    "request_header":"%v"
+}
+`
+	PrintLog(fmt.Sprintf("%v  %v  %v%v    %v", request.Method, http.StatusOK, request.Host, request.URL, request.Header))
+	json := fmt.Sprintf(s, hostname, request.Method, request.Host, request.URL, request.Header)
+	_, err = response.Write([]byte(json))
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// 自定义服务器
+func MyServer(port int) {
+	handler := MyHandler{
+		Mux: make(map[string]func(http.ResponseWriter, *http.Request)),
+	}
+	handler.Mux["/"] = HomeHandler
+	handler.Mux["/foo"] = FooHandler
+	addr := fmt.Sprintf("0.0.0.0:%v", port)
+	server := http.Server{
+		Addr:    addr,
+		Handler: &handler,
+	}
+	PrintLog("服务器启动成功, 请访问 http://" + addr)
+	err := server.ListenAndServe()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func PrintLog(msg string) {
+	logger.Println(msg)
+}
+
+func FreeLog() {
+	for {
+		PrintLog("服务器运行正常, 日志正常写入!!!")
+		time.Sleep(time.Second * 3)
+	}
+}
+
+const M = 1 << 20
 
 func main() {
-	GetUserList()
-	fmt.Println("#######################")
-	GetUserInfo()
-	fmt.Println("#######################")
-	PostUser()
-	fmt.Println("#######################")
-	PostUserIcon()
-	fmt.Println("#######################")
-	PutUserInfo()
-	fmt.Println("#######################")
-	DeleteUser()
+	PrintLog("程序运行开始...")
+	rand.Seed(time.Now().UnixNano())
+	go MyServer(8080)
+	go MyServer(80)
+	// 空闲日志, 每3秒写入一次
+	go FreeLog()
+	// CPU增加持续时长
+	duration := int64(600)
+	go func() {
+		for {
+			cpuUsage := (rand.Int63n(7) + 2) * 10
+			PrintLog(fmt.Sprintf("容器cpu使用率: %v %%, 持续时间: %vs", cpuUsage, duration))
+			TestCpu(cpuUsage, duration)
+		}
+	}()
+
+	var memUsage = 0
+	for {
+		memUsage = (rand.Intn(3) + 1) * 100
+		PrintLog(fmt.Sprintf("容器内存增加: %v M, 持续时间: %vs", memUsage, duration))
+		TestMem(memUsage, duration)
+	}
 }

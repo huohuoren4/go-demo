@@ -26,13 +26,13 @@ func main() {
 			context.JSON(http.StatusInternalServerError, gin.H{"msg": "请求信息错误!!!"})
 			return
 		}
-		fmt.Println("请求参数: name=", context.Query("name"), ", password=", context.Query("password"))
+		fmt.Println("##### 请求参数: name=", context.Query("name"), ", password=", context.Query("password"))
 		context.JSON(http.StatusOK, gin.H{"msg": "查询用户列表成功 !"})
 	})
 
 	// 查询用户信息: GET /hello/{id}
 	router.Handle("GET", "/hello/:id", func(context *gin.Context) {
-		fmt.Println("路径参数: id=", context.Param("id"))
+		fmt.Println("##### 路径参数: id=", context.Param("id"))
 		context.JSON(http.StatusOK, gin.H{"msg": "查询用户信息成功 !"})
 	})
 
@@ -44,17 +44,15 @@ func main() {
 			context.JSON(http.StatusInternalServerError, gin.H{"msg": "请求信息错误!!!"})
 			return
 		}
-		fmt.Println("请求体: name=", user.Name, ", password=", user.Password)
+		fmt.Println("##### 请求体: name=", user.Name, ", password=", user.Password)
 		context.JSON(http.StatusOK, gin.H{"msg": "创建用户成功 !"})
 	})
 
-	// 上传用户头像: POST /hello/{id}/upload  file=xxxx
+	// 上传用户头像: POST /hello/{id}/upload  image_file=xxxx
 	router.Handle("POST", "/hello/:id/upload", func(context *gin.Context) {
-		fmt.Println("路径参数: id=", context.Param("id"))
+		fmt.Println("##### 路径参数: id=", context.Param("id"))
 		file, err := context.FormFile("image_file")
-		fmt.Println("上传的文件名:", file.Filename)
 		if err != nil {
-			fmt.Println(err.Error())
 			context.JSON(http.StatusInternalServerError, gin.H{"msg": "文件上传失败!!!"})
 			return
 		}
@@ -79,20 +77,20 @@ func main() {
 
 	// 修改用户信息: PUT /hello  json: { "name": "123" }
 	router.Handle("PUT", "/hello/:id", func(context *gin.Context) {
-		fmt.Println("路径参数: id=", context.Param("id"))
+		fmt.Println("##### 路径参数: id=", context.Param("id"))
 		var user User
 		err := context.ShouldBindJSON(&user)
 		if err != nil {
 			context.JSON(http.StatusInternalServerError, gin.H{"msg": "请求信息错误!!!"})
 			return
 		}
-		fmt.Println("请求体: name=", user.Name, ", password=", user.Password)
+		fmt.Println("##### 请求体: name=", user.Name, ", password=", user.Password)
 		context.JSON(http.StatusOK, gin.H{"msg": "修改用户信息成功 !"})
 	})
 
 	// 删除用户: DELETE /hello/{id}
 	router.Handle("DELETE", "/hello/:id", func(context *gin.Context) {
-		fmt.Println("路径参数: id=", context.Param("id"))
+		fmt.Println("##### 路径参数: id=", context.Param("id"))
 		context.JSON(http.StatusOK, gin.H{"msg": "删除用户成功 !"})
 	})
 
